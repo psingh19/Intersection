@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Intersection</title>
+    <meta charset="utf-8">
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="1100" height="700"></canvas><br><br>
+    <h2 id="output"></h2>
+    <script>
+        var isFast = true;
+        var canvas = document.getElementById("gameCanvas");
+        var ctx = canvas.getContext("2d");
+        var x = 0;
+        var y = 50;
+        var a = 0;
+        var b = 50;
+
+        var deg = 4;
+        var yellowSpeed = 3;
+        var policeSpeed = 2;
+        var carX = 275;
+        var carY = 345;
+
+        var policeX = canvas.width + 400;
+        var policeY = 245;
+        var policeDeg = 0;
+
+        var redCarX = 590;
+        var redCarY = canvas.height + 200;
+        var redCarDeg = 0;
+        var Redspeed = 2;
+        var interval;
+        var isStop = false;
+        var suddenStop = false;
+        var isTimer = false;
+
+        var secondTurn = false;
+        var secondTurnP = true;
+        var secondTurnY = false;
+        //car
+        var car = new Image();
+        var police = new Image();
+        var redCar = new Image();
+        redCar.src = "images/car3.png";
+        car.src = "images/car.png";
+        police.src = "images/police.png";
+
+        main();
+
+        function main() {
+            //checking image load
+            car.onload = function() {
+                startGame();
+            };
+        }
+
+        function startGame() {
+            updateGame();
+            window.requestAnimationFrame(drawGame);
+
+        }
+
+        function updateGame() {
+            yellowUpdate();
+            //invoke itself again after few seconds 
+            window.setTimeout(updateGame, 33);
+        }
+
+        function drawGame() {
+            // 1. Erase the context before drawing
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            //draw on canvas
+            drawing();
+            touchSensor();
+            //police car loop
+            if (secondTurnP == false) {
+                policeCarStraight()
+            } else {
+                policeCar();
+            }
+
+            //yellow car loop
+            if (secondTurnY == false) {
+                yellowStraight();
+            } else {
+                yellowCar();
+            }
+
+            //red car loop
+            if (secondTurn == false) {
+                redRightTurn();
+            } else {
+                RedCar();
+            }
+
+            rightLight();
+            leftLight();
+            stopPole();
+            pedStop();
+            // 3. Invoke itself again to redraw context next time the browser is ready
+            window.requestAnimationFrame(drawGame);
+        }
+
+        // this function move red car to left 
+        function RedCar() {
+            if (redCarY >= 580 && redCarY <= 600 && isStop == false) {
+                redCarX += 0;
+                redCarY -= 0;
+                setTimeout(sensor, 4000);
+            } else {
+                redCarX -= Redspeed * Math.sin(Math.PI / 180 * redCarDeg);
+                redCarY -= Redspeed * Math.cos(Math.PI / 180 * redCarDeg);
+
+                if (redCarY < 390) {
+                    redCarDeg += 0.8;
+                }
+                if (redCarX < -100) {
+                    redCarX = 590;
+                    redCarY = canvas.height + 200;
+                    redCarDeg = 0;
+                    Redspeed = 2;
+                    secondTurn = false;
+                }
+                if (redCarX < 443) {
+                    redCarDeg = 90;
+                }
+
+            }
+
+            ctx.save();
+            ctx.translate(redCarX, redCarY);
+            ctx.rotate(redCarDeg * Math.PI / -180);
+            ctx.drawImage(redCar, -(redCar.width / 2), -(redCar.height / 2));
+            ctx.restore();
+        }
+        //this function move red car to right
+        function redRightTurn() {
+            redCarX += Redspeed * Math.sin(Math.PI / 180 * redCarDeg);
+            redCarY -= Redspeed * Math.cos(Math.PI / 180 * redCarDeg);
+
+            if (redCarY < 540) {
+                redCarDeg += 0.8;
+            }
+            if (redCarX > 735 && redCarY < 500) {
+                redCarDeg = 90;
+            }
+            if (redCarX > canvas.width + 100) {
+                redCarX = 590;
+                redCarY = canvas.height + 200;
+                redCarDeg = 0;
+                Redspeed = 2;
+                secondTurn = true;
+            }
+
+            ctx.save();
+            ctx.translate(redCarX, redCarY);
+            ctx.rotate(redCarDeg * Math.PI / 180);
+            ctx.drawImage(redCar, -(redCar.width / 2), -(redCar.height / 2));
+            ctx.restore();
+
+
+
+        }
+
+        //move yellow car to right
+        function yellowCar() {
+            if (a >= 560 && a < 570 && carY < 370) {
+                ctx.save();
+                ctx.translate(carX, carY);
+                ctx.rotate(deg * Math.PI / 180);
+                ctx.drawImage(car, 0, 0);
+                ctx.restore();
+            } else if (carY >= 370 && carY < 399) {
+                ctx.save();
+                ctx.translate(carX, carY);
+                ctx.rotate(deg * Math.PI / 180);
+                ctx.drawImage(car, 0, 0);
+                ctx.restore();
+            } else if (carY >= 399) {
+                ctx.save();
+                ctx.translate(carX, carY);
+                ctx.rotate(deg * Math.PI / 180);
+                ctx.drawImage(car, 0, 0);
+                ctx.restore();
+
+            } else {
+                // 2. Draw the image on the context
+                ctx.drawImage(car, a - 300, b + 300);
+                rightLight();
+                leftLight();
+            }
+        }
+        //move yellow car to straight
+        function yellowStraight() {
+            ctx.drawImage(car, a - 300, b + 300);
+            rightLight();
+            leftLight();
+            if (a >= 130 + 300 && a <= 150 + 300 && suddenStop == true) {
+                a += 0;
+            } else {
+                if (a < canvas.width + 400) {
+                    a += 2;
+                } else {
+                    a = 0;
+                    carX = 275;
+                    carY = 345;
+                    deg = 4;
+                    yellowSpeed = 3;
+                    secondTurnY = true;
+                }
+            }
+
+        }
+        //this function update coordinates while yellow car moves to right.
+        function yellowUpdate() {
+            if (secondTurnY == true) {
+                if (a < 560) {
+                    a += 4;
+                } else if (a >= 560 && a < 570 && carY < 420) {
+                    carY += 2;
+                    carX += 4;
+                    deg += 0.9;
+                    if (carY > 380 && carY < 415) {
+                        deg += 3;
+                        carX += 2;
+                    }
+                } else if (carY < canvas.height) {
+                    carY += yellowSpeed;
+                    deg = 90;
+                } else {
+                    a = 0;
+                    carX = 275;
+                    carY = 345;
+                    deg = 4;
+                    yellowSpeed = 3;
+                    secondTurnY = false;
+                }
+            }
+        }
+
+        //move police car to left 
+        function policeCar() {
+            if (policeX <= 820 && policeX >= 800 && suddenStop == true) {
+                policeX -= 0;
+                policeY += 0;
+            } else {
+                policeX -= policeSpeed * Math.cos(Math.PI / 180 * policeDeg);
+                policeY += policeSpeed * Math.sin(Math.PI / 180 * policeDeg);
+            }
+            ctx.save();
+            ctx.translate(policeX, policeY);
+            ctx.rotate(Math.PI / -180 * policeDeg);
+            ctx.drawImage(police, -(police.width / 2), -(police.height / 2));
+            ctx.restore();
+
+            if (policeX < 580) {
+                policeDeg += 0.8;
+            }
+            if (policeX < 605 && policeY > 380) {
+                policeDeg = 90;
+            }
+            //to create loop 
+            if (policeY > canvas.height + 100) {
+                policeDeg = 0;
+                policeX = canvas.width + 100;
+                policeY = 245;
+                secondTurnP = false;
+            }
+        }
+        //move police car to straight 
+        function policeCarStraight() {
+            if (policeX <= 820 && policeX >= 800 && suddenStop == true) {
+                policeX -= 0;
+            } else {
+                policeX -= policeSpeed * Math.cos(Math.PI / 180 * policeDeg);
+                policeY += policeSpeed * Math.sin(Math.PI / 180 * policeDeg);
+            }
+
+            ctx.save();
+            ctx.translate(policeX, policeY);
+            ctx.rotate(Math.PI / -180 * policeDeg);
+            ctx.drawImage(police, -(police.width / 2), -(police.height / 2));
+            ctx.restore();
+
+            //to create loop 
+            if (policeX < 0 - 100) {
+                policeDeg = 0;
+                policeX = canvas.width + 100;
+                policeY = 245;
+                secondTurnP = true;
+            }
+
+
+        }
+
+        function touchSensor() {
+            ctx.beginPath();
+            ctx.arc(585, 570, 40, 0, 2 * Math.PI);
+            ctx.strokeStyle = "black";
+            ctx.stroke();
+        }
+
+        function changeLights() {
+            frontLights(x + 505, 0, 25, 70, x + 505, 0);
+            isStop = false;
+        }
+
+        function leftLight() {
+            //left light poles
+            ctx.fillStyle = "black";
+            ctx.fillRect(x + 304, y + 49, 7, 220);
+            ctx.beginPath();
+            ctx.moveTo(x + 311.5, y + 61);
+            ctx.lineTo(x + 385, y + 80);
+            ctx.lineTo(x + 385, y + 88);
+            ctx.lineTo(x + 311.5, y + 68);
+            ctx.lineTo(x + 311.5, y + 61);
+            ctx.stroke();
+            ctx.fillStyle = "grey";
+            ctx.fill();
+            //left light pole
+            ctx.beginPath();
+            ctx.moveTo(x + 311, y + 229);
+            ctx.lineTo(x + 381, y + 233);
+            ctx.lineTo(x + 381, y + 256);
+            ctx.lineTo(x + 311, y + 258);
+            ctx.lineTo(x + 311, y + 224);
+            ctx.stroke();
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+            //lights
+            ctx.beginPath();
+            ctx.arc(x + 326, y + 244, 9.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            if (suddenStop == false) {
+                ctx.fillStyle = "#990000";
+            } else {
+                ctx.fillStyle = "#FF0000";
+            }
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = "#7F7F00";
+            ctx.arc(x + 348, y + 244, 8.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+            ctx.beginPath();
+            if (suddenStop == false) {
+                ctx.fillStyle = "#00FF00";
+                ctx.arc(x + 368.5, y + 244, 8.5, 0, 2 * Math.PI);
+            } else {
+                ctx.fillStyle = "green";
+            }
+            ctx.arc(x + 368.5, y + 244, 7.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+
+        }
+
+        function rightLight() {
+            //right side poles
+            ctx.fillStyle = "black";
+            ctx.fillRect(x + 810, y + 271, 7, 220);
+
+            //right side light pole
+            ctx.beginPath();
+            ctx.moveTo(x + 810, y + 280);
+            ctx.lineTo(x + 742, y + 283);
+            ctx.lineTo(x + 742, y + 304);
+            ctx.lineTo(x + 810, y + 306);
+            ctx.lineTo(x + 810, y + 279);
+            ctx.stroke();
+            ctx.fillStyle = "yellow";
+            ctx.fill();
+            //lights
+            ctx.beginPath();
+            if (suddenStop == false) {
+                ctx.fillStyle = "#990000";
+            } else {
+                ctx.fillStyle = "#FF0000";
+            }
+            ctx.arc(x + 795, y + 293, 9.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+            ctx.beginPath();
+            ctx.fillStyle = "#7F7F00";
+            ctx.arc(x + 773, y + 293.5, 8.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+            ctx.beginPath();
+            if (suddenStop == false) {
+                ctx.fillStyle = "#00FF00";
+                ctx.arc(x + 753, y + 293.5, 8.5, 0, 2 * Math.PI);
+            } else {
+                ctx.fillStyle = "green";
+            }
+            ctx.arc(x + 753, y + 293.5, 7.5, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+
+            //right side pole
+            ctx.beginPath();
+            ctx.moveTo(x + 810, y + 461);
+            ctx.lineTo(x + 711, y + 447);
+            ctx.lineTo(x + 711, y + 460);
+            ctx.lineTo(x + 810, y + 475);
+            ctx.stroke();
+            ctx.fillStyle = "grey";
+            ctx.fill();
+
+            //red light on pole
+            ctx.beginPath();
+            ctx.moveTo(x + 760, y + 451);
+            ctx.lineTo(x + 787, y + 454);
+            ctx.lineTo(x + 782, y + 460);
+            ctx.lineTo(x + 754, y + 457);
+            ctx.lineTo(x + 760, y + 451);
+            ctx.strokeStyle = "grey";
+            ctx.fillStyle = "black";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(x + 765, y + 450);
+            ctx.lineTo(x + 780, y + 450);
+            ctx.lineTo(x + 780, y + 454);
+            ctx.lineTo(x + 765, y + 453);
+            ctx.lineTo(x + 765, y + 448);
+            ctx.stroke();
+            if (isStop == false) {
+                ctx.fillStyle = "red";
+            } else {
+                ctx.fillStyle = "#00FF00";
+            }
+            ctx.fill();
+        }
+
+        function drawing() {
+
+            //grass
+            ctx.fillStyle = "#009900";
+            ctx.fillRect(x, y, canvas.width, canvas.height);
+
+            //stripes
+            ctx.fillStyle = "white";
+            ctx.fillRect(x, y + 100, canvas.width, 30);
+
+            //road
+            ctx.fillStyle = "#939393";
+            ctx.fillRect(x, y + 130, canvas.width, 280);
+            //centerLine
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(x, y + 266, 280, 3);
+            //stopLine
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 280, y + 267, 15, 170);
+
+            //centerLine R
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(x + 719, y + 266, 384, 3);
+            //stopLine
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 719, 180, 15, 138);
+
+            //half stripes l
+            ctx.fillStyle = "white";
+            ctx.fillRect(x, y + 408, canvas.width / 2 - 165, 30);
+
+            //half stripes r
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 594, y + 410, canvas.width / 3 + 140, 30);
+
+            //down_road
+            ctx.fillStyle = "#939393";
+            ctx.fillRect(x + 320, y + 310, canvas.width / 3 - 13, 500);
+
+            //boundary line horizontal
+            ctx.beginPath();
+            ctx.moveTo(x, y + 409);
+            ctx.lineTo(x + 323.5, 458.5);
+            ctx.stroke();
+            //vertical boundary fill color
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 320, y + 430, 30, 270);
+            //arc
+            ctx.beginPath();
+            ctx.arc(x + 323.8, 484, 25, -Math.PI / 2, 0);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.stroke();
+            //boundary line vertical
+            ctx.beginPath();
+            ctx.moveTo(x + 349, 484);
+            ctx.lineTo(x + 349, 699);
+            ctx.stroke();
+
+            //vertical boundary right-side
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 656, y + 432, 30, 280);
+            //fill white color in arc
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 319, 460.5, 11, 21);
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 328, 465, 11, 21);
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 339, 472, 5, 21);
+
+            //right side horiz boundary
+            ctx.beginPath();
+            ctx.moveTo(x + 686, y + 410);
+            ctx.lineTo(x + canvas.width, 460);
+            ctx.stroke();
+
+            //right side vertical boundary
+            ctx.beginPath();
+            ctx.moveTo(x + 657, y + 436);
+            ctx.lineTo(x + 657, canvas.height);
+            ctx.stroke();
+
+            //right side arc
+            ctx.beginPath();
+            ctx.arc(x + 683, 486, 26, Math.PI / 1, -Math.PI / 2.3);
+            ctx.stroke();
+            ctx.fillStyle = "white";
+            ctx.fill();
+            //fill right side arc
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 663, y + 423, 12, 21);
+
+            //upper boundary
+            ctx.beginPath();
+            ctx.moveTo(x, y + 129);
+            ctx.lineTo(x + canvas.width, y + 129);
+            ctx.stroke();
+
+
+
+            //white thin stripes
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 692, y + 129, 7, 280);
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 650, y + 129, 7, 298);
+
+            //stopLine down road
+            ctx.fillStyle = "white";
+            ctx.fillRect(x + 502, y + 451, 154, 15);
+
+            //light pole
+            ctx.fillStyle = "grey";
+            ctx.fillRect(x + 498, 0, 7, 176);
+            ctx.stroke();
+            //front light
+            frontLights(x + 505, 0, 25, 70, x + 505, 0);
+
+
+        }
+
+        //front Light pole
+        function frontLights(x, y, w, h, x1, y1) {
+
+            ctx.beginPath();
+            ctx.fillStyle = "yellow";
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeRect(x, y, w, h);
+
+            ctx.beginPath();
+            if (isStop == false) {
+                ctx.fillStyle = "#FF0000";
+                ctx.arc(x1 + 12, y1 + 15, 9, 0, 2 * Math.PI);
+            } else {
+                ctx.fillStyle = "#990000";
+            }
+            ctx.arc(x1 + 12, y1 + 15, 8, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.fillStyle = "#7F7F00";
+            ctx.arc(x1 + 12, y1 + 35, 8, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+
+            ctx.beginPath();
+            if (isStop == false) {
+                ctx.fillStyle = "green";
+            } else {
+                ctx.fillStyle = "#00FF00";
+                ctx.arc(x1 + 12, y1 + 55, 9, 0, 2 * Math.PI);
+            }
+            ctx.arc(x1 + 12, y1 + 55, 8, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fill();
+
+        }
+
+        function stopPole() {
+            //stop sign in front
+            ctx.fillStyle = "grey";
+            ctx.fillRect(x + 704, y + 18, 10, 108);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + 690, 19);
+            ctx.lineTo(x + 727, 19);
+            ctx.lineTo(x + 724, y + 18);
+            ctx.lineTo(x + 693, y + 18);
+            ctx.lineTo(x + 690, 19);
+            ctx.strokeStyle = "grey";
+            ctx.fillStyle = "black";
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + 708.5, 43, 12, 0, 360);
+            ctx.strokeStyle = "grey";
+
+            if (isStop == true) {
+                ctx.fillStyle = "#00FF00";
+            } else {
+                ctx.fillStyle = "red";
+
+            }
+
+            ctx.fill();
+        }
+
+        function pedStop() {
+            //stop white button
+            ctx.beginPath();
+            ctx.arc(x + 709, y + 58, 6, 0, 360);
+            ctx.strokeStyle = "grey";
+            ctx.fillStyle = "white";
+            ctx.fill();
+
+            //right-down stop buttons
+            ctx.beginPath();
+            ctx.arc(x + 737, y + 453, 7, 0, 360);
+            ctx.strokeStyle = "grey";
+            ctx.fillStyle = "white";
+            ctx.fill();
+        }
+
+        //method to get coordinates
+
+        var mouseX;
+        var mouseY;
+        var point = 0;
+        var buttonInterval;
+        canvas.onclick = function() {
+            mouseX = event.offsetX;
+            mouseY = event.offsetY;
+            if (mouseX >= 705 && mouseX <= 720 && mouseY >= 100 && mouseY <= 120 || (mouseX >= 728 && mouseX <= 745 && mouseY >= 490 && mouseY <= 510)) {
+                if (isTimer == false) {
+                    isTimer = true;
+                    suddenStop = true;
+                    buttonInterval = setTimeout(pedButton, 3000);
+                }
+            }
+        }
+
+        function pedButton() {
+            isStop = true;
+            setTimeout(getBack, 8000);
+        }
+
+        function getBack() {
+            isStop = false;
+            setTimeout(longBack, 3000);
+        }
+
+        function longBack() {
+            isTimer = false;
+            suddenStop = false;
+        }
+
+        function sensor() {
+            isTimer = true;
+            suddenStop = true;
+            pedButton();
+        }
+    </script>
+		
+	<!-- The core Firebase JS SDK is always required and must be listed first -->
+	<script src="/__/firebase/6.3.3/firebase-app.js"></script>
+
+	<!-- TODO: Add SDKs for Firebase products that you want to use
+		 https://firebase.google.com/docs/web/setup#reserved-urls -->
+
+	<!-- Initialize Firebase -->
+	<script src="/__/firebase/init.js"></script>
+
+</body>
+
+</html>
